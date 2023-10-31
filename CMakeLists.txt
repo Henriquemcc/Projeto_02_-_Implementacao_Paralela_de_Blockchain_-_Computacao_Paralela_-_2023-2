@@ -25,4 +25,4 @@ set(CUDA_SOURCE_FILES "CUDA para GPU/Block.cpp" "CUDA para GPU/Block.h" "CUDA pa
 # Set the -allow-unsupported-compiler flag
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-allow-unsupported-compiler")
 
-cuda_add_executable(CUDA_para_GPU "CUDA para GPU/main.cpp")
+cuda_add_executable(CUDA_para_GPU "CUDA para GPU/Block.cpp" "CUDA para GPU/Block.h" "CUDA para GPU/Blockchain.cpp" "CUDA para GPU/Blockchain.h" "CUDA para GPU/main.cpp" "CUDA para GPU/sha256.cpp" "CUDA para GPU/sha256.h")
