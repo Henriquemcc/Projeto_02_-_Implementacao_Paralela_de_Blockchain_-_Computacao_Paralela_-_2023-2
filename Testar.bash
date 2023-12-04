@@ -7,7 +7,7 @@ bash ./Limpar.bash
 bash ./Compilar.bash
 
 # Comparando as saídas
-bash ./CompararSaidas.bash
+bash ./CompararSaidasSha256.bash
 
 # Cronometrando o tempo gasto
 bash ./Cronometrar.bash
