@@ -28,6 +28,9 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
     const unsigned char *sub_block;
     int i;
     int j;
+
+#pragma omp target map(tofrom:message, block_nb, w, wv)
+#pragma omp teams distribute parallel for shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
         for (j = 0; j < 16; j++) {
