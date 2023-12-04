@@ -28,17 +28,27 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
     const unsigned char *sub_block;
     int i;
     int j;
+
+#pragma omp parallel for default(none) schedule(dynamic) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
+
+#pragma omp simd
         for (j = 0; j < 16; j++) {
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
+
+#pragma omp simd
         for (j = 16; j < 64; j++) {
             w[j] =  SHA256_F4(w[j -  2]) + w[j -  7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
+
+#pragma omp simd
         for (j = 0; j < 8; j++) {
             wv[j] = m_h[j];
         }
+
+#pragma omp simd
         for (j = 0; j < 64; j++) {
             t1 = wv[7] + SHA256_F2(wv[4]) + SHA2_CH(wv[4], wv[5], wv[6])
                  + sha256_k[j] + w[j];
@@ -52,9 +62,11 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
             wv[1] = wv[0];
             wv[0] = t1 + t2;
         }
-        for (j = 0; j < 8; j++) {
-            m_h[j] += wv[j];
-        }
+
+#pragma omp simd
+            for (j = 0; j < 8; j++) {
+                m_h[j] += wv[j];
+            }
     }
 }
 
@@ -109,6 +121,8 @@ void SHA256::final(unsigned char *digest)
     m_block[m_len] = 0x80;
     SHA2_UNPACK32(len_b, m_block + pm_len - 4);
     transform(m_block, block_nb);
+
+#pragma omp parallel for default(none) shared(digest) firstprivate(m_h)
     for (i = 0 ; i < 8; i++) {
         SHA2_UNPACK32(m_h[i], &digest[i << 2]);
     }
