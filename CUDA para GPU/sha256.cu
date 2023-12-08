@@ -2,6 +2,10 @@
 #include <fstream>
 #include "sha256.h"
 
+typedef unsigned int uint32;
+
+__constant__ uint32 *sha256_k_d;
+
 const unsigned int SHA256::sha256_k[64] = //UL = uint32
         {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
          0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -20,6 +24,88 @@ const unsigned int SHA256::sha256_k[64] = //UL = uint32
          0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
          0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
+__global__ void sha256_transform(const unsigned char *message, unsigned int block_nb, uint32* m_h_d) {
+
+    __shared__ uint32 w[64];
+    __shared__ uint32 wv[8];
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (tid < block_nb) {
+
+        const unsigned char *sub_block = message + (tid << 6);
+        for (int j = 0; j < 16; j++) {
+            SHA2_PACK32(&sub_block[j << 2], &w[j]);
+        }
+
+        __syncthreads();
+
+        for (int j = 16; j < 64; j++) {
+            w[j] =  SHA256_F4(w[j -  2]) + w[j -  7] + SHA256_F3(w[j - 15]) + w[j - 16];
+        }
+
+        for (int j = 0; j < 8; j++) {
+            wv[j] = m_h_d[j];
+        }
+
+        __syncthreads();
+
+        for (int j = 0; j < 64; j++) {
+            uint32 t1 = wv[7] + SHA256_F2(wv[4]) + SHA2_CH(wv[4], wv[5], wv[6])
+                 + sha256_k_d[j] + w[j];
+            uint32 t2 = SHA256_F1(wv[0]) + SHA2_MAJ(wv[0], wv[1], wv[2]);
+            wv[7] = wv[6];
+            wv[6] = wv[5];
+            wv[5] = wv[4];
+            wv[4] = wv[3] + t1;
+            wv[3] = wv[2];
+            wv[2] = wv[1];
+            wv[1] = wv[0];
+            wv[0] = t1 + t2;
+        }
+
+        __syncthreads();
+
+        for (int j = 0; j < 8; j++) {
+            m_h_d[j] += wv[j];
+        }
+    }
+}
+
+void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
+
+    // Variáveis
+    const unsigned char* message_d;
+    uint32* m_h_d;
+
+    // Alocando memória
+    cudaMalloc((void**)&message_d, sizeof(message));
+    cudaMalloc((void**)&m_h_d, 8 * sizeof(uint32));
+
+    // Tamanho das variáveis
+    size_t size_m_h = 8*sizeof(uint32);
+    size_t size_message = 64 * block_nb * sizeof(unsigned char);
+    size_t size_sha256_k = 64 * sizeof(uint32);
+
+    // Copiando variáveis e constantes
+    cudaMemcpy((void*)m_h_d, (void*)m_h, size_m_h, cudaMemcpyHostToDevice);
+    cudaMemcpy((void*)message_d, (void*)message, size_message, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(sha256_k_d, sha256_k, size_sha256_k);
+
+    // Executando o kernel
+    int block_size = 1024;
+    dim3 dimGrid((block_nb-1)/block_size + 1, 1, 1);
+    dim3 dimBlock(block_size,1,1);
+    sha256_transform<<<dimGrid, dimBlock>>>(message_d, block_nb, m_h_d);
+
+    // Copiando variável
+    cudaMemcpy((void**)m_h, (void**)m_h_d, size_m_h, cudaMemcpyDeviceToHost);
+
+    // Liberando memória
+    cudaFree((void**)m_h_d);
+    cudaFree((void**)message_d);
+}
+
+/*
 void SHA256::transform(const unsigned char *message, unsigned int block_nb)
 {
     uint32 w[64];
@@ -57,6 +143,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
         }
     }
 }
+*/
 
 void SHA256::init()
 {
