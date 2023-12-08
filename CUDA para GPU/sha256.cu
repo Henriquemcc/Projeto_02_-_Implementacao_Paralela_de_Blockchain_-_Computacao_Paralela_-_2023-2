@@ -74,21 +74,21 @@ __global__ void sha256_transform(const unsigned char *message, unsigned int bloc
 void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
 
     // Variáveis
-    const unsigned char* message_d;
+    unsigned char* message_d;
     uint32* m_h_d;
-
-    // Alocando memória
-    cudaMalloc((void**)&message_d, sizeof(message));
-    cudaMalloc((void**)&m_h_d, 8 * sizeof(uint32));
 
     // Tamanho das variáveis
     size_t size_m_h = 8*sizeof(uint32);
     size_t size_message = 64 * block_nb * sizeof(unsigned char);
     size_t size_sha256_k = 64 * sizeof(uint32);
 
+    // Alocando memória
+    cudaMalloc((void**)&message_d, size_message);
+    cudaMalloc((void**)&m_h_d, size_m_h);
+
     // Copiando variáveis e constantes
-    cudaMemcpy((void*)m_h_d, (void*)m_h, size_m_h, cudaMemcpyHostToDevice);
-    cudaMemcpy((void*)message_d, (void*)message, size_message, cudaMemcpyHostToDevice);
+    cudaMemcpy(m_h_d, m_h, size_m_h, cudaMemcpyHostToDevice);
+    cudaMemcpy(message_d, message, size_message, cudaMemcpyHostToDevice);
     cudaMemcpyToSymbol(sha256_k_d, sha256_k, size_sha256_k);
 
     // Executando o kernel
@@ -101,8 +101,8 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     cudaMemcpy((void**)m_h, (void**)m_h_d, size_m_h, cudaMemcpyDeviceToHost);
 
     // Liberando memória
-    cudaFree((void**)m_h_d);
-    cudaFree((void**)message_d);
+    cudaFree((void*)m_h_d);
+    cudaFree((void*)message_d);
 }
 
 /*
