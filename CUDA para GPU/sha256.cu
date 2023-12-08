@@ -4,7 +4,7 @@
 
 typedef unsigned int uint32;
 
-__constant__ uint32 *sha256_k_d;
+__constant__ uint32 sha256_k_d[64];
 
 const unsigned int SHA256::sha256_k[64] = //UL = uint32
         {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
