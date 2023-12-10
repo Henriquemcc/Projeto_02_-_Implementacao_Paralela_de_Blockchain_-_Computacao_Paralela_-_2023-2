@@ -30,11 +30,11 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     int j;
     omp_set_nested(1);
 
-//#pragma omp parallel for default(none) schedule(auto) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
+#pragma omp parallel for default(none) schedule(auto) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
 
-#pragma omp parallel for simd schedule(auto) default(none) shared(sub_block, w)
+//#pragma omp parallel for simd schedule(auto) default(none) shared(sub_block, w)
         for (j = 0; j < 16; j++) {
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
@@ -43,7 +43,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
             w[j] = SHA256_F4(w[j - 2]) + w[j - 7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
 
-#pragma omp parallel for simd schedule(auto) default(none) shared(wv)
+//#pragma omp parallel for simd schedule(auto) default(none) shared(wv)
         for (j = 0; j < 8; j++) {
             wv[j] = m_h[j];
         }
@@ -62,7 +62,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
             wv[0] = t1 + t2;
         }
 
-#pragma omp parallel for simd schedule(auto) default(none) shared(wv)
+//#pragma omp parallel for simd schedule(auto) default(none) shared(wv)
             for (j = 0; j < 8; j++) {
 #pragma omp atomic
                 m_h[j] += wv[j];
