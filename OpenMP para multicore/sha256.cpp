@@ -1,8 +1,9 @@
 #include <cstring>
 #include <fstream>
 #include "sha256.h"
+#include <omp.h>
 
-const unsigned int SHA256::sha256_k[64] = //UL = uint32
+const unsigned int SHA256::sha256_k[64] = // UL = uint32
         {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
          0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
          0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -20,14 +21,14 @@ const unsigned int SHA256::sha256_k[64] = //UL = uint32
          0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
          0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-void SHA256::transform(const unsigned char *message, unsigned int block_nb)
-{
+void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     uint32 w[64];
     uint32 wv[8];
     uint32 t1, t2;
     const unsigned char *sub_block;
     int i;
     int j;
+    omp_set_nested(1);
 
 #pragma omp parallel for default(none) schedule(dynamic) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
     for (i = 0; i < (int) block_nb; i++) {
@@ -40,7 +41,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
 
 #pragma omp simd
         for (j = 16; j < 64; j++) {
-            w[j] =  SHA256_F4(w[j -  2]) + w[j -  7] + SHA256_F3(w[j - 15]) + w[j - 16];
+            w[j] = SHA256_F4(w[j - 2]) + w[j - 7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
 
 #pragma omp simd
@@ -70,8 +71,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
     }
 }
 
-void SHA256::init()
-{
+void SHA256::init() {
     m_h[0] = 0x6a09e667;
     m_h[1] = 0xbb67ae85;
     m_h[2] = 0x3c6ef372;
@@ -84,8 +84,7 @@ void SHA256::init()
     m_tot_len = 0;
 }
 
-void SHA256::update(const unsigned char *message, unsigned int len)
-{
+void SHA256::update(const unsigned char *message, unsigned int len) {
     unsigned int block_nb;
     unsigned int new_len, rem_len, tmp_len;
     const unsigned char *shifted_message;
@@ -99,22 +98,26 @@ void SHA256::update(const unsigned char *message, unsigned int len)
     new_len = len - rem_len;
     block_nb = new_len / SHA224_256_BLOCK_SIZE;
     shifted_message = message + rem_len;
-    transform(m_block, 1);
-    transform(shifted_message, block_nb);
+    omp_set_nested(1);
+#pragma omp parallel sections
+    {
+#pragma omp section
+        transform(m_block, 1);
+#pragma omp section
+        transform(shifted_message, block_nb);
+    }
     rem_len = new_len % SHA224_256_BLOCK_SIZE;
     memcpy(m_block, &shifted_message[block_nb << 6], rem_len);
     m_len = rem_len;
     m_tot_len += (block_nb + 1) << 6;
 }
 
-void SHA256::final(unsigned char *digest)
-{
+void SHA256::final(unsigned char *digest) {
     unsigned int block_nb;
     unsigned int pm_len;
     unsigned int len_b;
     int i;
-    block_nb = (1 + ((SHA224_256_BLOCK_SIZE - 9)
-                     < (m_len % SHA224_256_BLOCK_SIZE)));
+    block_nb = (1 + ((SHA224_256_BLOCK_SIZE - 9) < (m_len % SHA224_256_BLOCK_SIZE)));
     len_b = (m_tot_len + m_len) << 3;
     pm_len = block_nb << 6;
     memset(m_block + m_len, 0, pm_len - m_len);
@@ -122,25 +125,24 @@ void SHA256::final(unsigned char *digest)
     SHA2_UNPACK32(len_b, m_block + pm_len - 4);
     transform(m_block, block_nb);
 
-#pragma omp parallel for default(none) shared(digest) firstprivate(m_h)
-    for (i = 0 ; i < 8; i++) {
+#pragma omp parallel for simd schedule(auto) shared(digest) firstprivate(m_h)
+    for (i = 0; i < 8; i++) {
         SHA2_UNPACK32(m_h[i], &digest[i << 2]);
     }
 }
 
-std::string sha256(std::string input)
-{
+std::string sha256(std::string input) {
     unsigned char digest[SHA256::DIGEST_SIZE];
-    memset(digest,0,SHA256::DIGEST_SIZE);
+    memset(digest, 0, SHA256::DIGEST_SIZE);
 
     SHA256 ctx = SHA256();
     ctx.init();
-    ctx.update( (unsigned char*)input.c_str(), input.length());
+    ctx.update((unsigned char *) input.c_str(), input.length());
     ctx.final(digest);
 
-    char buf[2*SHA256::DIGEST_SIZE+1];
-    buf[2*SHA256::DIGEST_SIZE] = 0;
+    char buf[2 * SHA256::DIGEST_SIZE + 1];
+    buf[2 * SHA256::DIGEST_SIZE] = 0;
     for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
-        sprintf(buf+i*2, "%02x", digest[i]);
+        sprintf(buf + i * 2, "%02x", digest[i]);
     return std::string(buf);
 }
