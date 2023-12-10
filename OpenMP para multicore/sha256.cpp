@@ -39,12 +39,11 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
 
-#pragma omp simd
         for (j = 16; j < 64; j++) {
             w[j] = SHA256_F4(w[j - 2]) + w[j - 7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
 
-#pragma omp simd
+#pragma omp parallel for simd schedule(auto) default(none) shared(wv)
         for (j = 0; j < 8; j++) {
             wv[j] = m_h[j];
         }
