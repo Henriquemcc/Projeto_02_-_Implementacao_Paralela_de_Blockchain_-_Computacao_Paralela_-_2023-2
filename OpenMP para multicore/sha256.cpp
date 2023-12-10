@@ -34,7 +34,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
 
-#pragma omp simd
+#pragma omp parallel for simd schedule(auto) default(none) shared(sub_block, w)
         for (j = 0; j < 16; j++) {
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
