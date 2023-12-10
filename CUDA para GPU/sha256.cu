@@ -1,6 +1,8 @@
 #include <cstring>
 #include <fstream>
 #include "sha256.h"
+#include <cuda_runtime.h>
+
 
 typedef unsigned int uint32;
 
@@ -37,8 +39,6 @@ __global__ void sha256_transform(const unsigned char *message, unsigned int bloc
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
 
-        __syncthreads();
-
         for (int j = 16; j < 64; j++) {
             w[j] =  SHA256_F4(w[j -  2]) + w[j -  7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
@@ -46,8 +46,6 @@ __global__ void sha256_transform(const unsigned char *message, unsigned int bloc
         for (int j = 0; j < 8; j++) {
             wv[j] = m_h_d[j];
         }
-
-        __syncthreads();
 
         for (int j = 0; j < 64; j++) {
             uint32 t1 = wv[7] + SHA256_F2(wv[4]) + SHA2_CH(wv[4], wv[5], wv[6])
@@ -63,10 +61,8 @@ __global__ void sha256_transform(const unsigned char *message, unsigned int bloc
             wv[0] = t1 + t2;
         }
 
-        __syncthreads();
-
         for (int j = 0; j < 8; j++) {
-            m_h_d[j] += wv[j];
+            atomicAdd(&m_h_d[j], wv[j]);
         }
     }
 }
@@ -92,7 +88,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     cudaMemcpyToSymbol(sha256_k_d, sha256_k, size_sha256_k);
 
     // Executando o kernel
-    int block_size = 1024;
+    int block_size = 32;
     dim3 dimGrid((block_nb-1)/block_size + 1, 1, 1);
     dim3 dimBlock(block_size,1,1);
     sha256_transform<<<dimGrid, dimBlock>>>(message_d, block_nb, m_h_d);
