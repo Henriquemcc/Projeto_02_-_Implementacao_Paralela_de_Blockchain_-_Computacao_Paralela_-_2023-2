@@ -88,7 +88,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     cudaMemcpyToSymbol(sha256_k_d, sha256_k, size_sha256_k);
 
     // Executando o kernel
-    int block_size = 1024;
+    int block_size = 32;
     dim3 dimGrid((block_nb-1)/block_size + 1, 1, 1);
     dim3 dimBlock(block_size,1,1);
     sha256_transform<<<dimGrid, dimBlock>>>(message_d, block_nb, m_h_d);
