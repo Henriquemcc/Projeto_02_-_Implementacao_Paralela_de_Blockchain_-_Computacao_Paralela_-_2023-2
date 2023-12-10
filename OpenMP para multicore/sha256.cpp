@@ -98,11 +98,11 @@ void SHA256::update(const unsigned char *message, unsigned int len) {
     block_nb = new_len / SHA224_256_BLOCK_SIZE;
     shifted_message = message + rem_len;
     omp_set_nested(1);
-#pragma omp parallel sections
+//#pragma omp parallel sections
     {
-#pragma omp section
+//#pragma omp section
         transform(m_block, 1);
-#pragma omp section
+//#pragma omp section
         transform(shifted_message, block_nb);
     }
     rem_len = new_len % SHA224_256_BLOCK_SIZE;
