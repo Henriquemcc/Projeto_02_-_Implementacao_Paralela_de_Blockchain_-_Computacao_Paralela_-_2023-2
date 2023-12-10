@@ -30,7 +30,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb) {
     int j;
     omp_set_nested(1);
 
-#pragma omp parallel for default(none) schedule(dynamic) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
+#pragma omp parallel for default(none) schedule(auto) shared(message, block_nb, w, wv) private(i, sub_block, j, t1, t2)
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
 
