@@ -8,7 +8,7 @@
 Block::Block(uint32_t nIndexIn, const string &sDataIn) : _nIndex(nIndexIn), _sData(sDataIn)
 {
     _nNonce = 0;
-    _tTime = 0;
+    _tTime = 1702343415;
 
     sHash = _CalculateHash();
 }
