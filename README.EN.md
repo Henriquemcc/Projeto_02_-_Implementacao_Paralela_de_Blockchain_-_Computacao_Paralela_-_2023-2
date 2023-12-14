@@ -26,6 +26,18 @@ The group must implement 3 parallel versions of the code: i) OpenMP for multicor
 
 *Note*: The group must deliver a .zip file with three different folders, one for each implemented version.
 
+## Presentation
+
+### Slides
+
+The presentation slides (in Portuguese) are available at: [Apresentação.pdf](Apresentação.pdf).
+
+### Video
+
+This is the video of the presentation (in Portuguese):
+
+[![Apresentação - Projeto 02 - Implementação Paralela de Blockchain - Computação Paralela - 2023-2](https://img.youtube.com/vi/WkpesiNS20U/0.jpg)](https://www.youtube.com/watch?v=WkpesiNS20U)
+
 ## Group members
 
 [Fernanda Ribeiro Passos Cirino](https://github.com/FernandaPassosc)

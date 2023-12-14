@@ -26,6 +26,18 @@ O grupo deve implementar 3 versões paralelas do código: i) OpenMP para multico
 
 *Obs*: O grupo deve entregar um arquivo .zip com três pastas diferentes, uma para cada versão implementada.
 
+## Apresentação
+
+### Slides
+
+Os slides da apresentação estão disponíveis em: [Apresentação.pdf](Apresentação.pdf).
+
+### Vídeo
+
+Este é o vídeo da apresentação:
+
+[![Apresentação - Projeto 02 - Implementação Paralela de Blockchain - Computação Paralela - 2023-2](https://img.youtube.com/vi/WkpesiNS20U/0.jpg)](https://www.youtube.com/watch?v=WkpesiNS20U)
+
 ## Membros do grupo
 
 [Fernanda Ribeiro Passos Cirino](https://github.com/FernandaPassosc)
